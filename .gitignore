@@ -2,3 +2,6 @@
 ignore-nodes.txt
 *.csv
 *.xlsx
+build/*
+dist/*
+farm_earnings_xlsx-output.spec
