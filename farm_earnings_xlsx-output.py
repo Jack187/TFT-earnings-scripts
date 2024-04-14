@@ -48,6 +48,14 @@ def fetch_farm_nodes(farm_id):
     else:
         raise ValueError(f"Failed to fetch nodes for farm ID {farm_id}.")
 
+def filter_ignore_nodes(nodes):
+    file = open('.\\ignore-nodes.txt','r')
+    ignore_nodes = [int(x) for x in file]
+    file.close
+
+    include_nodes = [node for node in nodes if not node in ignore_nodes]
+    return include_nodes
+
 def fetch_node_minting_history(session, node_id, month, year):
     url = f'https://alpha.minting.tfchain.grid.tf/api/v1/node/{node_id}'
     response = session.get(url)
@@ -65,10 +73,10 @@ def fetch_node_minting_history(session, node_id, month, year):
                     uptime_percentage = format_float((minting_info['measured_uptime'] / (24 * 3600 * 30.45)) * 100, 2)
                     data.append([
                         minting_info['node_id'],
-                        format_float(minting_info['reward']['tft'] / 1e7),
+                        float(format_float(minting_info['reward']['tft'] / 1e7)),
                         30.45,
-                        uptime_days,
-                        uptime_percentage,
+                        float(uptime_days),
+                        float(uptime_percentage),
                         item['hash']
                     ])
         return data
@@ -88,7 +96,8 @@ def create_workbook(farm_id, dates):
             ws.append(['Node ID', 'TFT Earned', 'Total Period (Days)', 'Uptime (Days)', 'Uptime (%)', 'Receipt Hash'])
 
             node_ids = fetch_farm_nodes(farm_id)
-            futures = [executor.submit(fetch_node_minting_history, session, node_id, month, year) for node_id in node_ids]
+            filtered_node_ids = filter_ignore_nodes(node_ids)
+            futures = [executor.submit(fetch_node_minting_history, session, node_id, month, year) for node_id in filtered_node_ids]
             all_data = []
             for future in as_completed(futures):
                 all_data.extend(future.result())
