@@ -23,6 +23,14 @@ def fetch_farm_nodes(farm_id):
     nodes = response.json()
     return [node['nodeId'] for node in nodes]
 
+def filter_ignore_nodes(nodes):
+    file = open('.\\ignore-nodes.txt','r')
+    ignore_nodes = [int(x) for x in file]
+    file.close
+
+    include_nodes = [node for node in nodes if not node in ignore_nodes]
+    return include_nodes
+
 def fetch_node_minting_history(node_id, month, year):
     url = f'https://alpha.minting.tfchain.grid.tf/api/v1/node/{node_id}'
     response = requests.get(url)
@@ -52,8 +60,9 @@ def fetch_node_minting_history(node_id, month, year):
 
 def process_farm(farm_id, month, year):
     node_ids = fetch_farm_nodes(farm_id)
+    filtered_node_ids = filter_ignore_nodes(node_ids)
     all_data = []
-    for node_id in node_ids:
+    for node_id in filtered_node_ids:
         node_data = fetch_node_minting_history(node_id, month, year)
         all_data.extend(node_data)
     
